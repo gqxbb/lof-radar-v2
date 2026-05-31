@@ -75,19 +75,18 @@ def run_radar():
             group_markdown += "─" * 15 + "\n"
             group_markdown += f"💡 **套利纪律**：请在 15:00 前完成场外下单。注意防范小成交额冲击成本！"
 
-      # 🍏 强行向 PushDeer App 专属通道发射
+      # 🍏 针对梁总 `pdu` 开头专属 App 通道的终极发射逻辑
         if PUSH_KEY:
-            # 针对 App 优化的新版标准参数
             payload = {
                 "pushkey": PUSH_KEY,
-                "text": "🦅 LOF溢价内参已送达", # App 锁屏弹窗看到的标题
-                "desp": group_markdown,           # 点进 App 看到的精美 Markdown 战报
+                "text": "🦅 LOF溢价内参已送达", # 锁屏弹窗标题
+                "desp": group_markdown,           # Markdown 详情
                 "type": "markdown"
             }
             
             try:
-                # 强制使用标准的 API 接口进行多端推送
-                res = requests.post("https://api2.pushdeer.com/message/push", data=payload)
-                print(f"PushDeer 返回状态: {res.text}")
+                # 👑 核心破防：pdu 钥匙必须死死对接 pushdeer 官方的旧版极速网关，切勿使用 api2 网址！
+                res = requests.post("https://api.pushdeer.com/message/push", data=payload)
+                print(f"PushDeer App 通道返回状态: {res.text}")
             except Exception as e:
                 print(f"发送失败，网络异常: {e}")
