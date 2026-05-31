@@ -1,0 +1,27 @@
+name: 钉钉全自动完美扫盘
+
+on:
+  workflow_dispatch: # 人工手动触发后门
+
+jobs:
+  run-radar:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'  # 强行粉碎 Node 20 恶性死锁
+    steps:
+    - name: 1. 拉取最新代码
+      uses: actions/checkout@v4
+
+    - name: 2. 准备Python环境
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: 3. 安装量化依赖库
+      run: |
+        pip install requests
+
+    - name: 4. 强行开火发射
+      env:
+        DING_WEBHOOK: ${{ secrets.DING_WEBHOOK }}
+      run: python cron_radar.py
