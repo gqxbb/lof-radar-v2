@@ -29,11 +29,11 @@ def run_radar():
         
         count_target = 0
         
-        # 👑 飞书顶级彭博卡片排版协议（大标题开头死死咬住“测试”暗号，击穿拦截）
+        # 👑 飞书顶级彭博卡片排版协议（大标题开头死死咬住刚才通电的暗号）
         card_content = {
             "config": {"wide_screen_mode": True},
             "header": {
-                "title": {"tag": "plain_text", "content": "测试：搞钱小本本 · LOF溢价内参"},
+                "title": {"tag": "plain_text", "content": "🦅 小本本 · LOF溢价套利内参"},
                 "template": "orange"  # 亮橙色警报包边，极其高档
             },
             "elements": [
