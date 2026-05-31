@@ -75,16 +75,19 @@ def run_radar():
             group_markdown += "─" * 15 + "\n"
             group_markdown += f"💡 **套利纪律**：请在 15:00 前完成场外下单。注意防范小成交额冲击成本！"
 
-        # 🍏 强行向 PushDeer 微信通道发射
+      # 🍏 强行向 PushDeer App 专属通道发射
         if PUSH_KEY:
+            # 针对 App 优化的新版标准参数
             payload = {
                 "pushkey": PUSH_KEY,
-                "text": "🦅 搞钱小本本 · 决战内参已送达", # 微信弹窗看到的简略标题
-                "desp": group_markdown,                # 点击进去看到的完整精美Markdown表格
+                "text": "🦅 LOF溢价内参已送达", # App 锁屏弹窗看到的标题
+                "desp": group_markdown,           # 点进 App 看到的精美 Markdown 战报
                 "type": "markdown"
             }
-            res = requests.post("https://api2.pushdeer.com/message/push", data=payload)
-            print(f"微信通道返回状态: {res.text}")
-
-if __name__ == "__main__":
-    run_radar()
+            
+            try:
+                # 强制使用标准的 API 接口进行多端推送
+                res = requests.post("https://api2.pushdeer.com/message/push", data=payload)
+                print(f"PushDeer 返回状态: {res.text}")
+            except Exception as e:
+                print(f"发送失败，网络异常: {e}")
