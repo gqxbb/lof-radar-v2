@@ -82,15 +82,13 @@ if st.button("🔄 立即暴力刷新全市场 LOF 溢价数据并同步推送")
             if fund_df is None or fund_df.empty:
                 raise Exception("数据为空")
         except Exception as e:
-            # 🚨 【自动换弹】：东财如果拔线拦截，瞬间无缝切换至新浪主干网保底！
+            # 🚨 【自动换弹】：东财被拦截，瞬间切换至新浪主干网（拼写已修正为 sina 🟢）
             source_name = "新浪财经备用网"
             try:
-                # 抓取新浪全市场基金实时行情
-                sina_df = ak.fund_etf_category_sine()
+                sina_df = ak.fund_etf_category_sina()
                 if sina_df is not None and not sina_df.empty:
-                    # 统一字段清洗，无缝对齐东财格式
+                    # 统一字段清洗，无缝对齐数据格式
                     sina_df.rename(columns={'代码': '基金代码', '名称': '基金简称', '对应净值': '最新净值'}, inplace=True)
-                    # 新浪盘中实时溢价计算
                     sina_df['现价'] = pd.to_numeric(sina_df['最新价'], errors='coerce')
                     sina_df['最新净值'] = pd.to_numeric(sina_df['最新净值'], errors='coerce')
                     sina_df['溢价率'] = (sina_df['现价'] - sina_df['最新净值']) / sina_df['最新净值'] * 100
@@ -102,7 +100,7 @@ if st.button("🔄 立即暴力刷新全市场 LOF 溢价数据并同步推送")
         if fund_df is not None and not fund_df.empty:
             count_target = 0
             
-            # 提示当前生效的数据通道，彰显量化系统的高级感
+            # 提示当前生效的数据通道
             st.success(f"⚡ 链路安全连通！当前由【{source_name}】提供盘中高可靠时序数据。")
             
             # 初始化一键复制文本框容器
@@ -198,6 +196,6 @@ if st.button("🔄 立即暴力刷新全市场 LOF 溢价数据并同步推送")
                         try:
                             push_title = f"🦅 发现 {count_target} 只高溢价套利标的！"
                             requests.get(f"https://api2.pushdeer.com/message/push?text={push_title}&desp={text_for_copy}&pushkey={PUSHDEER_KEY}")
-                            st.success("🚀 PushDeer 微信端推手已同步离线空降！")
+                            st.success("🚀 PushDeer 微信端推手已成功同步离线空降！")
                         except:
                             pass
