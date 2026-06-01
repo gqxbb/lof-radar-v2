@@ -9,7 +9,7 @@ import requests
 # 强行忽略可能导致报错的海外代理
 os.environ['NO_PROXY'] = 'eastmoney.com,sinajs.cn,feishu.cn'
 
-# 🍏 梁总，强制横向平铺宽屏排版（左边视觉卡片，右边留给你一键复制发群，这才是实战完全体！）
+# 🍏 宽屏实战排版
 st.set_page_config(page_title="🦅 搞钱小本本 · LOF决战雷达", layout="wide")
 
 # 梁总持有的真实 PDU 字符串钥匙
@@ -58,40 +58,63 @@ now_time = now.strftime("%Y-%m-%d %H:%M:%S")
 st.markdown(f"""
     <div class="time-banner">
         <div class="remind-text">⚡ 战术铁律：请于交易日【14:30】准时刷新，捕捉盲区最后一公里的疯狂价差！</div>
-        <div style="font-size: 13px; color: #BFDBFE; margin-top: 3px;">当前北京时间：{now_time} | 网页服务已满血托管</div>
+        <div style="font-size: 13px; color: #BFDBFE; margin-top: 3px;">当前北京时间：{now_time} | 网页服务已部署双数据源热备天线</div>
     </div>
 """, unsafe_allow_html=True)
 
 st.title("🦅 搞钱小本本 · LOF溢价盲区决战雷达")
-st.markdown("<p style='color: #9CA3AF; margin-top:-10px;'>纯粹、野蛮、穿透力极强的 A 股全市场多维跨国扫盘引擎</p>", unsafe_allow_html=True)
+st.markdown("<p style='color: #9CA3AF; margin-top:-10px;'>支持东财/新浪双路动态交叉流的 A 股全市场多维跨国扫盘引擎</p>", unsafe_allow_html=True)
 st.write("")
 
-# 黄金大按钮顶格呈现
+# 核心过滤配置
+overseas_keywords = ["纳斯", "标普", "原油", "油气", "商品", "互联", "中概", "日经", "德国", "法国", "印度", "越南", "亚洲", "全球", "海外"]
+premium_threshold = 3.0  # 严格执行 3% 门槛
+
 if st.button("🔄 立即暴力刷新全市场 LOF 溢价数据并同步推送"):
-    with st.spinner("正在击穿东方财富服务器，强制抓取实时大盘快照..."):
+    with st.spinner("正在启动双弹夹扫描引擎，强制突防行情网中..."):
         
-        # 👑 放弃一切虚妄的休市锁，只要点击，就必须强制执行东财最干净的实时全市场扫盘
+        fund_df = None
+        source_name = "东方财富主干网"
+        
+        # 👑 【第一弹夹】：首先尝试读取东财实时行情
         try:
             fund_df = ak.fund_lof_spot_em()
+            if fund_df is None or fund_df.empty:
+                raise Exception("数据为空")
         except Exception as e:
-            st.error(f"❌ 东方财富主干网络连线失败: {e}")
-            fund_df = None
+            # 🚨 【自动换弹】：东财如果拔线拦截，瞬间无缝切换至新浪主干网保底！
+            source_name = "新浪财经备用网"
+            try:
+                # 抓取新浪全市场基金实时行情
+                sina_df = ak.fund_etf_category_sine()
+                if sina_df is not None and not sina_df.empty:
+                    # 统一字段清洗，无缝对齐东财格式
+                    sina_df.rename(columns={'代码': '基金代码', '名称': '基金简称', '对应净值': '最新净值'}, inplace=True)
+                    # 新浪盘中实时溢价计算
+                    sina_df['现价'] = pd.to_numeric(sina_df['最新价'], errors='coerce')
+                    sina_df['最新净值'] = pd.to_numeric(sina_df['最新净值'], errors='coerce')
+                    sina_df['溢价率'] = (sina_df['现价'] - sina_df['最新净值']) / sina_df['最新净值'] * 100
+                    fund_df = sina_df
+            except Exception as sina_err:
+                st.error(f"❌ 商业多路天线全部遭遇强力拦截，请稍后重试: {sina_err}")
+                fund_df = None
 
         if fund_df is not None and not fund_df.empty:
-            overseas_keywords = ["纳斯", "标普", "原油", "油气", "商品", "互联", "中概", "日经", "德国", "法国", "印度", "越南", "亚洲", "全球", "海外"]
-            premium_threshold = 3.0  # 严格执行您的 3% 实战战术门槛
-            
             count_target = 0
             
+            # 提示当前生效的数据通道，彰显量化系统的高级感
+            st.success(f"⚡ 链路安全连通！当前由【{source_name}】提供盘中高可靠时序数据。")
+            
             # 初始化一键复制文本框容器
-            text_for_copy = f"🦅 搞钱小本本 · 盘中实时套利内参\n📡 扫盘时间：{now.strftime('%Y-%m-%d %H:%M')}\n"
+            text_for_copy = f"🦅 搞钱小本本 · 盘中实时套利内参\n📡 扫盘时间：{now.strftime('%Y-%m-%d %H:%M')} (通道:{source_name})\n"
             text_for_copy += "═" * 20 + "\n\n"
             
-            # 初始化卡片渲染容器
             card_html_all = ""
 
             for index, row in fund_df.iterrows():
-                code = str(row['基金代码'])
+                if '基金代码' not in row or '基金简称' not in row:
+                    continue
+                code = str(row['基金代码']).replace("sh", "").replace("sz", "")
                 name = row['基金简称']
                 
                 # 穿透过滤核心跨境品种
@@ -102,7 +125,7 @@ if st.button("🔄 立即暴力刷新全市场 LOF 溢价数据并同步推送")
                         premium = float(row['溢价率'])
                         if premium >= premium_threshold:
                             
-                            # 优雅降级防护：高频刷新时如果巨潮限流，默认放行并标记为实时开放
+                            # 优雅降级防护巨潮限流
                             try:
                                 limit_info = ak.fund_open_format_xw()
                                 matched_fund = limit_info[limit_info['基金代码'] == code]
@@ -110,22 +133,22 @@ if st.button("🔄 立即暴力刷新全市场 LOF 溢价数据并同步推送")
                             except:
                                 status_desc = "开放申购"
 
-                            # 铁血过滤暂停申购的无用假标的
+                            # 铁血过滤暂停申购的假肉票
                             if "暂停申购" in status_desc or "停申" in status_desc or status_desc == "暂停":
                                 continue
                                 
                             count_target += 1
-                            price = float(row['现价'])
+                            price = float(row.get('现价', 0.0))
                             raw_amount = float(row.get('成交额', 0.0))
                             amount_wan = raw_amount if code.startswith("50") else raw_amount / 10000.0
                             
-                            # 1. 拼接发给微信群和复制框的纯文本
+                            # 1. 纯文本拼接
                             text_for_copy += f"🔥 {count_target}. 【{name}】({code})\n"
                             text_for_copy += f"• 实时溢价率：{premium:.2f}%\n"
                             text_for_copy += f"• 场内现价：{price:.3f}元 | 成交额：{amount_wan:.2f}万元\n"
                             text_for_copy += f"• 场外状态：✅ {status_desc}\n\n"
                             
-                            # 2. 拼接网页前端大卡片
+                            # 2. 前端卡片布局
                             warn_text = "⚠️ 流动性偏低，注意防范冲击成本！" if amount_wan < 200 else "🟢 成交活跃，属于优质套利标的！"
                             warn_color = "#FF4B4B" if amount_wan < 200 else "#10B981"
                             
@@ -150,7 +173,7 @@ if st.button("🔄 立即暴力刷新全市场 LOF 溢价数据并同步推送")
                     except:
                         continue
 
-            # 🍏 分栏布局展现，给足操盘手排面
+            # 分栏布局展现
             col_left_panel, col_right_panel = st.columns(2)
 
             if count_target == 0:
@@ -170,11 +193,11 @@ if st.button("🔄 立即暴力刷新全市场 LOF 溢价数据并同步推送")
                     st.markdown("### 📋 微信/飞书一键复制文案栏")
                     st.text_area("长按全选复制下方文本，直接轰炸社群：", value=text_for_copy, height=450)
                     
-                    # 🍏 【触发微信 PushDeer 瞬间轰炸】
+                    # 触发微信 PushDeer 推送
                     if PUSHDEER_KEY:
                         try:
-                            push_title = f"🦅 搞钱小本本发现 {count_target} 只高溢价套利标的！"
+                            push_title = f"🦅 发现 {count_target} 只高溢价套利标的！"
                             requests.get(f"https://api2.pushdeer.com/message/push?text={push_title}&desp={text_for_copy}&pushkey={PUSHDEER_KEY}")
-                            st.success("🚀 PushDeer 微信端推手已成功同步离线空降！")
-                        except Exception as e:
-                            st.error(f"PushDeer 推送失败: {e}")
+                            st.success("🚀 PushDeer 微信端推手已同步离线空降！")
+                        except:
+                            pass
